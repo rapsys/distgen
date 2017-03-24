@@ -28,7 +28,6 @@ fi
 if [ `losetup ${LOOPA} >/dev/null 2>&1; echo $?` -ne 1 -o `losetup ${LOOPB} >/dev/null 2>&1; echo $?` -ne 1 ]; then
 	echo "Loopa or loopb already exists, try to run:"
 	echo "mdadm -S /dev/md/$MDBOOT"
-	echo "mdadm -S /dev/md/$MDSLASH"
 	echo "mdadm -S /dev/md/$MDDATA"
 	echo "losetup -d ${LOOPA}"
 	echo "losetup -d ${LOOPB}"
