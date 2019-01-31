@@ -17,11 +17,17 @@ mkdir -p ${MOUNTPOINT}
 # Mount base filesystem
 mount /dev/mapper/${DATANAME} ${MOUNTPOINT}
 
-# Create slash subvolume
-btrfs subvolume create ${MOUNTPOINT}/slash
-
 # Create home subvolume
 btrfs subvolume create ${MOUNTPOINT}/home
+
+# Create mail subvolume
+btrfs subvolume create ${MOUNTPOINT}/mail
+
+# Create mysql subvolume
+btrfs subvolume create ${MOUNTPOINT}/mysql
+
+# Create slash subvolume
+btrfs subvolume create ${MOUNTPOINT}/slash
 
 # Set slash as default
 btrfs subvolume set-default $(btrfs subvolume list ${MOUNTPOINT} | grep slash | perl -pne 's/^ID\s([0-9]+)\s.*$/\1/') ${MOUNTPOINT}
