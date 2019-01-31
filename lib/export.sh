@@ -33,6 +33,8 @@ Under advanced change MAC Address to ${NETMAC}
 EOF
 
 # Dhcpd.conf
+NETADDRESS4F=$(perl -e 'use Socket qw(AF_INET inet_ntop inet_pton); my ($ip, $mask) = @ARGV; print Socket::inet_ntop(Socket::AF_INET, pack("N", unpack("N", Socket::inet_pton(Socket::AF_INET, $ip)) & (2**$mask-1)<<(32-$mask)))' ${NETADDRESS4%/*} ${NETADDRESS4#*/})
+NETADDRESS4M=$(perl -e 'my ($ip, $mask) = @ARGV; print join(".", unpack("C4", pack("N", (2**$mask-1)<<(32-$mask))))'  ${NETADDRESS4%/*} ${NETADDRESS4#*/})
 cat << EOF > root/dhcpd.conf
 # No ddns update
 ddns-update-style none;
@@ -47,8 +49,8 @@ option domain-name-servers ${NETDNS/ /, };
 default-lease-time 600;
 max-lease-time 1050;
 
-# ${NETADDRESS4%.*}.0/${NETADDRESS4#*/} subnet
-subnet ${NETADDRESS4%.*}.0 netmask 255.255.255.0 {
+# ${NETADDRESS4F}/${NETADDRESS4#*/} subnet
+subnet ${NETADDRESS4F} netmask ${NETADDRESS4M} {
 	# default gateway
 	option routers ${NETGATEWAY4};
 }
