@@ -19,9 +19,16 @@ perl -pne "/^(devtmpfs \\/dev|\\/dev\\/(md|dm|mapper))/ || undef \$_; s%${MOUNTP
 # Extract last kernel version
 KVER=`chroot ${MOUNTPOINT} rpm -qa | perl -pne '/kernel-server-latest/||undef $_;s%^kernel-(server)-latest-([^-]+)-(.+)$%\2-\1-\3%'`
 
+# Retrieve mdboot and mddata uuids
+MDBOOTUUID=`mdadm --detail /dev/md/${MDBOOT} | perl -pne '/UUID\s:\s/||undef $_;s/^\s+UUID\s:\s//'`
+MDDATAUUID=`mdadm --detail /dev/md/${MDDATA} | perl -pne '/UUID\s:\s/||undef $_;s/^\s+UUID\s:\s//'`
+
 # Regenerate initrd
-#XXX: force non hostonly else it don't store commandline : rd.luks.uuid rd.md.uuid ip=dhcp rd.neednet=1
-DRACUT_SKIP_FORCED_NON_HOSTONLY=1 chroot ${MOUNTPOINT} mkinitrd -f /boot/initrd-${KVER}.img ${KVER}
+#XXX: request a non hostonly to get all kernel modules
+#XXX: provide devices uuid to have md and luks ready
+#XXX: force crypttab presence, mandatory to unlocking
+#XXX: you may add ip=dhcp rd.neednet=1 for debug purpose
+chroot ${MOUNTPOINT} dracut -f -N --fstab --hostonly-cmdline --kernel-cmdline 'rd.luks.uuid='$LUKSDATAUUID' rd.md.uuid='$MDBOOTUUID' rd.md.uuid='$MDDATAUUID -I /etc/crypttab /boot/initrd-${KVER}.img ${KVER}
 
 # Generate grub config
 chroot ${MOUNTPOINT} grub2-mkconfig -o /boot/grub2/grub.cfg
@@ -42,6 +49,12 @@ umount ${MOUNTPOINT}/dev
 
 # Reset mtab
 mv -f ${MOUNTPOINT}/etc/mtab.orig ${MOUNTPOINT}/etc/mtab
+
+# Umount mysql
+umount ${MOUNTPOINT}/var/lib/mysql
+
+# Umount mail
+umount ${MOUNTPOINT}/var/spool/mail
 
 # Umount home
 umount ${MOUNTPOINT}/home
