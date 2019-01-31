@@ -1,0 +1,61 @@
+#! /bin/sh -xe
+
+# Export safe locale
+export LC_ALL=C
+
+# Get distcook path
+. config/distcook.conf
+
+# Copy distcook root config
+cp $DISTCOOK/root.conf config/
+
+# Extract configuration
+echo '#! /bin/sh -e' > lib/config.sh
+cat config/*.conf | perl -pne 'if (/^#/) {undef $_;} else {s/^/export /}' >> lib/config.sh
+
+# Source config
+. lib/config.sh
+
+# Test mapper entries
+if [ -f "/dev/mapper/$SLASHNAME" -o -f "/dev/mapper/$DATANAME" ]; then
+	echo "Mapper name already exists, try to run:"
+	echo "cryptsetup close $SLASHNAME"
+	echo "cryptsetup close $DATANAME"
+	exit 1
+fi
+
+# Test loopa and loopb
+if [ `losetup ${LOOPA} >/dev/null 2>&1; echo $?` -ne 1 -o `losetup ${LOOPB} >/dev/null 2>&1; echo $?` -ne 1 ]; then
+	echo "Loopa or loopb already exists, try to run:"
+	echo "mdadm -S /dev/md/$MDBOOT"
+	echo "mdadm -S /dev/md/$MDDATA"
+	echo "losetup -d ${LOOPA}"
+	echo "losetup -d ${LOOPB}"
+	exit 1
+fi
+
+# Create root dir
+if [ ! -d "$PWD/root" ]; then
+	mkdir "$PWD/root"
+fi
+
+# Device creation
+. lib/device.sh
+
+# Fs creation
+. lib/mkfs.sh
+
+# Setup root
+. lib/root.sh
+
+# Sync data
+. lib/sync.sh
+
+# Setup boot
+. lib/boot.sh
+
+# Free resources
+. lib/free.sh
+
+# Export config
+. lib/export.sh
